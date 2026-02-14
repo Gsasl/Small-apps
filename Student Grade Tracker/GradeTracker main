@@ -1,0 +1,421 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+/**
+ * GradeTracker - Main Class (Refactored)
+ * Manages student data collection, calculations, File I/O, and reporting
+ * 
+ * PHASE 1: Object-Oriented Setup
+ * PHASE 2: User Input and Data Gathering
+ * PHASE 3: Calculations (Average, Highest, Lowest)
+ * PHASE 4: Console Summary Report
+ * PHASE 5/6: Batch Loading and CSV Export
+ */
+public class Main {
+    // Constants
+    private static final String MENU_HEADER = "===== GRADE TRACKER SYSTEM =====";
+    private static final String MANUAL_ENTRY = "--- Manual Entry Mode ---";
+    private static final String ROSTER_HEADER = "===== CLASS ROSTER =====";
+    private static final String STATS_HEADER = "===== CLASS STATISTICS =====";
+    private static final String SEPARATOR = "-".repeat(32);
+    
+    private static final String STUDENT_NAME_FORMAT = "%-20s";
+    private static final String GRADE_FORMAT = "%.2f";
+    private static final String CSV_TIMESTAMP_FORMAT = "yyyyMMdd_HHmmss";
+    private static final String DEFAULT_EXPORT_NAME = "Class_Report";
+    private static final String CSV_EXTENSION = ".csv";
+    private static final String CSV_HEADER_LINE = "Student Name,Grade";
+    private static final String CSV_STATS_LINE = "STATISTICS,";
+    
+    private static final int GRADE_INPUT_OPTION = 2;
+    private static final double MIN_VALID_GRADE = 0.0;
+    private static final double MAX_VALID_GRADE = 100.0;
+    
+    private static ArrayList<Student> st = new ArrayList<>();
+    
+    public static void main(String[] args) {
+        Scanner ab = new Scanner(System.in);
+        
+        try {
+            displayMainMenu();
+            int choice = getUserChoice(ab);
+            
+            if (choice == GRADE_INPUT_OPTION) {
+                handleFileLoadingFlow(ab);
+            } else {
+                handleManualEntryFlow(ab);
+            }
+            
+            displayReport();
+            exportToCSV(ab);
+        } finally {
+            ab.close();
+        }
+    }
+    
+    /**
+     * Display the main menu options
+     */
+    private static void displayMainMenu() {
+        System.out.println(MENU_HEADER);
+        System.out.println("1. Enter students manually");
+        System.out.println("2. Load students from CSV/TXT file");
+    }
+    
+    /**
+     * Get user's menu choice with validation
+     */
+    private static int getUserChoice(Scanner scanner) {
+        System.out.print("Choose an option (1 or 2): ");
+        String choice = scanner.nextLine().trim();
+        return Integer.parseInt(choice);
+    }
+    
+   private static void handleFileLoadingFlow(Scanner scanner) {
+        System.out.print("Enter the exact file path (e.g., grades.csv or C:/grades.txt): ");
+        String filePath = scanner.nextLine().trim();
+        
+        // THE FIX: Automatically strip literal quotes if the user pasted them from Windows
+        filePath = filePath.replace("\"", "");
+        
+        loadFromFile(filePath);
+   }
+    /**
+     * Ask user if they want to add manual entries after file loading
+     */
+    private static boolean promptForAdditionalManualEntry(Scanner scanner) {
+        System.out.print("\nDo you want to add additional students manually? (yes/no): ");
+        return !scanner.nextLine().trim().equalsIgnoreCase("no");
+    }
+    
+    /**
+     * Handle manual student entry flow
+     */
+    private static void handleManualEntryFlow(Scanner ab) {
+        System.out.println("\n" + MANUAL_ENTRY);
+        System.out.println("Add students to the system.\n");
+        
+        boolean addMore = true;
+        while (addMore) {
+            String name = promptForStudentName(ab);
+            if (name == null) break; // EOF reached
+            
+            Double grade = promptForStudentGrade(ab);
+            if (grade == null) break; // EOF reached
+            
+            addStudent(name, grade);
+            addMore = promptForAnotherStudent(ab);
+        }
+    }
+    
+    /**
+     * Prompt for student name, rejecting empty input
+     */
+    private static String promptForStudentName(Scanner ab) {
+        while (true) {
+            System.out.print("Enter student name: ");
+            if (!ab.hasNextLine()) return null; // EOF
+            
+            String name = ab.nextLine().trim();
+            if (!name.isEmpty()) {
+                return name;
+            }
+        }
+    }
+    
+    /**
+     * Prompt for student grade with validation (0-100)
+     */
+    private static Double promptForStudentGrade(Scanner ab) {
+        while (true) {
+            System.out.print("Enter student grade (0-100): ");
+            
+            if (!ab.hasNextLine()) return null; // EOF
+            
+            try {
+                double grade = Double.parseDouble(ab.nextLine());
+                
+                if (isValidGrade(grade)) {
+                    return grade;
+                } else {
+                    System.out.printf("❌ Invalid range. Grade must be between %.0f and %.0f.%n", 
+                        MIN_VALID_GRADE, MAX_VALID_GRADE);
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("❌ Invalid input. Please enter numbers only (e.g., 85.5).");
+            }
+        }
+    }
+    
+    /**
+     * Validate if grade is in acceptable range
+     */
+    private static boolean isValidGrade(double grade) {
+        return grade >= MIN_VALID_GRADE && grade <= MAX_VALID_GRADE;
+    }
+    
+    /**
+     * Add student to roster
+     */
+    private static void addStudent(String name, double grade) {
+        st.add(new Student(name, grade));
+        System.out.println("Student added!\n");
+    }
+    
+    /**
+     * Ask user if they want to add another student
+     */
+    private static boolean promptForAnotherStudent(Scanner scanner) {
+        while (true) {
+            System.out.print("Press enter to add another student or type 'no' to stop: ");
+            if (!scanner.hasNextLine()) return false; // EOF
+            
+            String response = scanner.nextLine().toLowerCase().trim();
+            
+            if (response.equals("no")) {
+                return false;
+            } else if (response.isEmpty()) {
+                return true;
+            } else {
+                System.out.println("❌ Invalid input. Press enter to continue or type 'no' to stop.");
+            }
+        }
+    }
+    
+ 
+     /* PHASE 5: Load data from a CSV or TXT file (Upgraded Smart Parser)
+     * Handles both CSV (Name,Grade) and Vertical formats (Name on line 1, Grade on line 2)
+     */
+    private static void loadFromFile(String filePath) {
+        try {
+            File file = new File(filePath);
+            Scanner fileScanner = new Scanner(file);
+            int successCount = 0;
+            int errorCount = 0;
+
+            System.out.println("\nReading file...");
+
+            while (fileScanner.hasNextLine()) {
+                String line = fileScanner.nextLine().trim();
+                
+                // Skip empty lines or header rows
+                if (shouldSkipLine(line)) continue;
+                
+                // --- FORMAT 1: CSV Layout (e.g., Student1,35.5) ---
+                if (line.contains(",")) {
+                    if (parseAndAddStudent(line)) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } 
+                // --- FORMAT 2: Vertical Layout (e.g., Student1 \n 35.5) ---
+                else {
+                    String name = line; // The current line is the name
+                    
+                    // Make sure there is another line to read the grade from!
+                    if (fileScanner.hasNextLine()) {
+                        String gradeLine = fileScanner.nextLine().trim();
+                        
+                        // Skip any accidental empty lines between the name and grade
+                        while (gradeLine.isEmpty() && fileScanner.hasNextLine()) {
+                            gradeLine = fileScanner.nextLine().trim();
+                        }
+                        
+                        try {
+                            double grade = Double.parseDouble(gradeLine);
+                            if (isValidGrade(grade)) {
+                                addStudent(name, grade);
+                                successCount++;
+                            } else {
+                                System.out.println("⚠️ Skipping (Grade out of bounds): " + gradeLine);
+                                errorCount++;
+                            }
+                        } catch (NumberFormatException e) {
+                            System.out.println("⚠️ Skipping (Invalid vertical format): " + name + " / " + gradeLine);
+                            errorCount++;
+                        }
+                    }
+                }
+            }
+            
+            fileScanner.close();
+            reportFileLoadResult(successCount, errorCount);
+
+        } catch (FileNotFoundException e) {
+            System.out.println("❌ Error: File not found. Please check the path and try again.");
+        }
+    }
+    /**
+     * Check if a line should be skipped (empty or header)
+     */
+    private static boolean shouldSkipLine(String line) {
+        return line.trim().isEmpty() || line.toLowerCase().contains("grade");
+    }
+    
+    /**
+     * Parse CSV line and add student if valid
+     */
+    private static boolean parseAndAddStudent(String line) {
+        try {
+            String[] parts = line.split(",");
+            
+            if (parts.length < 2) {
+                System.out.println("⚠️ Skipping line (Invalid format): " + line);
+                return false;
+            }
+            
+            String name = parts[0].trim();
+            double grade = Double.parseDouble(parts[1].trim());
+            
+            if (!isValidGrade(grade)) {
+                System.out.println("⚠️ Skipping line (Grade out of bounds): " + line);
+                return false;
+            }
+            
+            addStudent(name, grade);
+            return true;
+            
+        } catch (NumberFormatException e) {
+            System.out.println("⚠️ Skipping line (Not a valid number): " + line);
+            return false;
+        }
+    }
+    
+    /**
+     * Report file loading results
+     */
+    private static void reportFileLoadResult(int successCount, int errorCount) {
+        System.out.printf("✅ File loaded! %d students added. (%d errors)%n", successCount, errorCount);
+    }
+    
+    /**
+     * PHASE 6: Export the final roster and stats to a timestamped CSV
+     */
+    private static void exportToCSV(Scanner scanner) {
+        if (st.isEmpty()) {
+            return;
+        }
+
+        String exportName = promptForExportFileName(scanner);
+        String fileName = generateExportFileName(exportName);
+        
+        System.out.println("Saving data to " + fileName + "...");
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(fileName))) {
+            writeCSVData(writer);
+            System.out.println("💾 Export successful! File saved as: " + fileName);
+        } catch (IOException e) {
+            System.out.println("❌ Error saving file: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Prompt for export file name
+     */
+    private static String promptForExportFileName(Scanner scanner) {
+        System.out.print("\nEnter a name for the export file (without .csv): ");
+        String name = scanner.nextLine().trim();
+        return name.isEmpty() ? DEFAULT_EXPORT_NAME : name;
+    }
+    
+    /**
+     * Generate timestamped export file name
+     */
+    private static String generateExportFileName(String baseName) {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(CSV_TIMESTAMP_FORMAT);
+        String timestamp = dtf.format(LocalDateTime.now());
+        return baseName + "_" + timestamp + CSV_EXTENSION;
+    }
+    
+    /**
+     * Write CSV data and statistics
+     */
+    private static void writeCSVData(PrintWriter writer) {
+        writer.println(CSV_HEADER_LINE);
+        
+        for (Student student : st) {
+            writer.println(student.getName() + "," + student.getGrade());
+        }
+        
+        writer.println(""); 
+        writer.println(CSV_STATS_LINE);
+        writer.println("Total Students," + st.size());
+        writer.println("Average Grade," + String.format(GRADE_FORMAT, calculateAverage()));
+        writer.println("Highest Grade," + findHighest());
+        writer.println("Lowest Grade," + findLowest());
+    }
+    
+    /**
+     * Calculate average grade
+     */
+    private static double calculateAverage() {
+        if (st.isEmpty()) return 0;
+        double sum = 0;
+        for (Student student : st) {
+            sum += student.getGrade();
+        }
+        return sum / st.size();
+    }
+    
+    /**
+     * Find highest grade
+     */
+    private static double findHighest() {
+        if (st.isEmpty()) return 0;
+        double max = st.get(0).getGrade();
+        for (Student student : st) {
+            if (student.getGrade() > max) {
+                max = student.getGrade();
+            }
+        }
+        return max;
+    }
+    
+    /**
+     * Find lowest grade
+     */
+    private static double findLowest() {
+        if (st.isEmpty()) return 0;
+        double min = st.get(0).getGrade();
+        for (Student student : st) {
+            if (student.getGrade() < min) {
+                min = student.getGrade();
+            }
+        }
+        return min;
+    }
+    
+    /**
+     * PHASE 4: Display formatted report
+     */
+    private static void displayReport() {
+        if (st.isEmpty()) {
+            System.out.println("\nNo students in the system.");
+            return;
+        }
+
+        System.out.println("\n" + ROSTER_HEADER);
+        System.out.printf(STUDENT_NAME_FORMAT + " %s%n", "Student Name", "Grade");
+        System.out.println(SEPARATOR);
+
+        for (Student student : st) {
+            System.out.printf(STUDENT_NAME_FORMAT + " " + GRADE_FORMAT + "%n", 
+                student.getName(), student.getGrade());
+        }
+
+        System.out.println("\n" + STATS_HEADER);
+        System.out.printf("Total Students: %d%n", st.size());
+        System.out.printf("Average Grade: " + GRADE_FORMAT + "%n", calculateAverage());
+        System.out.printf("Highest Grade: " + GRADE_FORMAT + "%n", findHighest());
+        System.out.printf("Lowest Grade: " + GRADE_FORMAT + "%n", findLowest());
+        System.out.println(SEPARATOR);
+    }
+}
