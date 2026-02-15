@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeAlpha Student Grade Tracker</title>
+    <title>Grade Tracker basic Js demo</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -117,4 +117,40 @@
 
         .stat-box {
             background: #e8f4f8; padding: 15px;
-            border-radius:
+            border-radius: 6px; text-align: center;
+        }
+
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--primary); display: block; }
+        .error { color: var(--danger); font-size: 0.9rem; display: none; margin-top: 5px; }
+
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>📚 Grade Tracker basic Js demo</h1>
+        <button class="btn-readme" onclick="toggleReadme()">📖 View README.txt Sub-Menu</button>
+    </div>
+
+    <div id="readmeBlock" class="readme-container">
+<pre>
+======================================================
+PROJECT: CodeAlpha Student Grade Tracker
+LANGUAGE: Java (Backend) / JavaScript (Web Port)
+ARCHITECTURE: Object-Oriented, CLI, Modular File I/O
+======================================================
+
+🌟 1. UNIQUE FEATURES
+---------------------
+* "Smart" File Parser: Automatically detects and parses both 
+  standard CSVs (Name,Grade) and vertical text files.
+* Bulletproof Input: Safe parsing logic prevents buffer 
+  crashing when dealing with unexpected characters.
+* Dynamic Timestamped Exports: Prevents accidental data loss 
+  by naming exports e.g., "Class_Report_20260214_190842.csv"
+* Graceful Degradation:
