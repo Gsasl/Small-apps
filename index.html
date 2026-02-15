@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GradeTracker Pro - Java Logic Port</title>
+    <title>Grade Tracker basic Js demo</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -29,9 +29,42 @@
         .header {
             text-align: center;
             color: var(--primary);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             border-bottom: 3px solid var(--secondary);
-            padding-bottom: 10px;
+            padding-bottom: 20px;
+        }
+
+        .btn-readme {
+            background-color: #f39c12;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+            margin-top: 10px;
+            display: inline-block;
+        }
+        .btn-readme:hover { background-color: #d68910; }
+
+        .readme-container {
+            display: none; /* Hidden by default */
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.2);
+            text-align: left;
+        }
+        
+        .readme-container pre {
+            white-space: pre-wrap;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
         }
 
         .grid {
@@ -61,14 +94,22 @@
             color: white; border: none; border-radius: 4px;
             cursor: pointer; font-weight: bold; transition: background 0.3s;
         }
-
         button:hover { background-color: #2980b9; }
-        .btn-export { background-color: var(--success); margin-top: 20px;}
+
+        .btn-export { background-color: var(--success); margin-top: 25px;}
         .btn-export:hover { background-color: #219653; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
-        th { background-color: #f1f1f1; }
+        .output-card { text-align: center; } /* Centers the internal elements */
+
+        table { 
+            width: 90%; 
+            margin: 15px auto 0 auto; /* Centers the table within the card */
+            border-collapse: collapse; 
+        }
+        
+        /* Centered the text inside the table for better spacing */
+        th, td { text-align: center; padding: 12px; border-bottom: 1px solid #eee; }
+        th { background-color: #f1f1f1; color: var(--primary); }
 
         .stats-grid {
             display: grid; grid-template-columns: repeat(4, 1fr);
@@ -93,8 +134,42 @@
 
 <div class="container">
     <div class="header">
-        <h1>📚 GradeTracker Pro</h1>
-        <p>Interactive Web Demo (Powered by JavaScript)</p>
+        <h1>📚 Grade Tracker basic Js demo</h1>
+        <button class="btn-readme" onclick="toggleReadme()">📖 View README.txt Sub-Menu</button>
+    </div>
+
+    <div id="readmeBlock" class="readme-container">
+<pre>
+======================================================
+PROJECT: GradeTracker (Console Edition)
+LANGUAGE: Java (Ported to JS for Web Demo)
+ARCHITECTURE: Object-Oriented, CLI, Modular File I/O
+======================================================
+
+                    UNIQUE FEATURES
+---------------------
+* "Smart" File Parser: Automatically detects and parses both 
+  standard CSVs (Name,Grade) and vertical text files.
+* Bulletproof Input: Safe parsing logic prevents buffer 
+  crashing when dealing with unexpected characters.
+* Dynamic Timestamped Exports: Prevents accidental data loss 
+  by naming exports e.g., "Class_Report_20260214_190842.csv"
+* Graceful Degradation: Bad lines of data are skipped and logged 
+  rather than crashing the entire application.
+
+                        USER MANUAL
+-----------------
+[MANUAL ENTRY]: Enter a student's name and a valid grade (0-100).
+The system will immediately calculate and update the class roster.
+
+[BATCH LOAD]: Click "Choose File" to upload a .txt or .csv file.
+If your data contains commas, it will split it. If your data is 
+formatted vertically (Name on line 1, Grade on line 2), the smart 
+parser will automatically assemble it.
+
+[EXPORTING]: Clicking Export will instantly generate a formatted 
+.csv file featuring your current roster and mathematical statistics.
+</pre>
     </div>
 
     <div class="grid">
@@ -122,7 +197,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card output-card">
         <h2>===== CLASS ROSTER =====</h2>
         <table>
             <thead>
@@ -136,7 +211,7 @@
             </tbody>
         </table>
 
-        <h2 style="margin-top: 30px;">===== CLASS STATISTICS =====</h2>
+        <h2 style="margin-top: 35px;">===== CLASS STATISTICS =====</h2>
         <div class="stats-grid">
             <div class="stat-box">
                 <small>Total Students</small>
@@ -162,6 +237,16 @@
 
 <script>
     let students = [];
+
+    // Toggle README Sub-Menu Function
+    function toggleReadme() {
+        const readmeBlock = document.getElementById('readmeBlock');
+        if (readmeBlock.style.display === 'none' || readmeBlock.style.display === '') {
+            readmeBlock.style.display = 'block';
+        } else {
+            readmeBlock.style.display = 'none';
+        }
+    }
 
     // Phase 2: Manual Data Entry
     function addStudent() {
