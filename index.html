@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grade Tracker basic Js demo</title>
+    <title>CodeAlpha Student Grade Tracker</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -50,7 +50,7 @@
         .btn-readme:hover { background-color: #d68910; }
 
         .readme-container {
-            display: none; /* Hidden by default */
+            display: none; 
             background: #2c3e50;
             color: #ecf0f1;
             padding: 20px;
@@ -99,15 +99,14 @@
         .btn-export { background-color: var(--success); margin-top: 25px;}
         .btn-export:hover { background-color: #219653; }
         
-        .output-card { text-align: center; } /* Centers the internal elements */
+        .output-card { text-align: center; } 
 
         table { 
             width: 90%; 
-            margin: 15px auto 0 auto; /* Centers the table within the card */
+            margin: 15px auto 0 auto; 
             border-collapse: collapse; 
         }
         
-        /* Centered the text inside the table for better spacing */
         th, td { text-align: center; padding: 12px; border-bottom: 1px solid #eee; }
         th { background-color: #f1f1f1; color: var(--primary); }
 
@@ -118,276 +117,4 @@
 
         .stat-box {
             background: #e8f4f8; padding: 15px;
-            border-radius: 6px; text-align: center;
-        }
-
-        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--primary); display: block; }
-        .error { color: var(--danger); font-size: 0.9rem; display: none; margin-top: 5px; }
-
-        @media (max-width: 600px) {
-            .grid { grid-template-columns: 1fr; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div class="header">
-        <h1>📚 Grade Tracker basic Js demo</h1>
-        <button class="btn-readme" onclick="toggleReadme()">📖 View README.txt Sub-Menu</button>
-    </div>
-
-    <div id="readmeBlock" class="readme-container">
-<pre>
-======================================================
-PROJECT: GradeTracker (Console Edition)
-LANGUAGE: Java (Ported to JS for Web Demo)
-ARCHITECTURE: Object-Oriented, CLI, Modular File I/O
-======================================================
-
-                    UNIQUE FEATURES
----------------------
-* "Smart" File Parser: Automatically detects and parses both 
-  standard CSVs (Name,Grade) and vertical text files.
-* Bulletproof Input: Safe parsing logic prevents buffer 
-  crashing when dealing with unexpected characters.
-* Dynamic Timestamped Exports: Prevents accidental data loss 
-  by naming exports e.g., "Class_Report_20260214_190842.csv"
-* Graceful Degradation: Bad lines of data are skipped and logged 
-  rather than crashing the entire application.
-
-                        USER MANUAL
------------------
-[MANUAL ENTRY]: Enter a student's name and a valid grade (0-100).
-The system will immediately calculate and update the class roster.
-
-[BATCH LOAD]: Click "Choose File" to upload a .txt or .csv file.
-If your data contains commas, it will split it. If your data is 
-formatted vertically (Name on line 1, Grade on line 2), the smart 
-parser will automatically assemble it.
-
-[EXPORTING]: Clicking Export will instantly generate a formatted 
-.csv file featuring your current roster and mathematical statistics.
-</pre>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>1. Manual Entry Mode</h2>
-            <div class="form-group">
-                <label>Student Name</label>
-                <input type="text" id="studentName" placeholder="e.g. John Doe">
-            </div>
-            <div class="form-group">
-                <label>Grade (0-100)</label>
-                <input type="number" id="studentGrade" min="0" max="100" step="0.01" placeholder="e.g. 95.5">
-                <div id="gradeError" class="error">Grade must be between 0 and 100.</div>
-            </div>
-            <button onclick="addStudent()">Add Student</button>
-        </div>
-
-        <div class="card">
-            <h2>2. Batch Load (CSV/TXT)</h2>
-            <div class="form-group">
-                <label>Upload File</label>
-                <input type="file" id="fileInput" accept=".csv, .txt">
-            </div>
-            <button onclick="processFile()">Parse File</button>
-        </div>
-    </div>
-
-    <div class="card output-card">
-        <h2>===== CLASS ROSTER =====</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Student Name</th>
-                    <th>Grade</th>
-                </tr>
-            </thead>
-            <tbody id="rosterBody">
-                <tr><td colspan="2" style="text-align: center; color: #888;">No students in the system.</td></tr>
-            </tbody>
-        </table>
-
-        <h2 style="margin-top: 35px;">===== CLASS STATISTICS =====</h2>
-        <div class="stats-grid">
-            <div class="stat-box">
-                <small>Total Students</small>
-                <span class="stat-value" id="statTotal">0</span>
-            </div>
-            <div class="stat-box">
-                <small>Average Grade</small>
-                <span class="stat-value" id="statAvg">0.00</span>
-            </div>
-            <div class="stat-box">
-                <small>Highest Grade</small>
-                <span class="stat-value" id="statHigh">0.00</span>
-            </div>
-            <div class="stat-box">
-                <small>Lowest Grade</small>
-                <span class="stat-value" id="statLow">0.00</span>
-            </div>
-        </div>
-
-        <button class="btn-export" onclick="exportToCSV()">💾 Export to Timestamped CSV</button>
-    </div>
-</div>
-
-<script>
-    let students = [];
-
-    // Toggle README Sub-Menu Function
-    function toggleReadme() {
-        const readmeBlock = document.getElementById('readmeBlock');
-        if (readmeBlock.style.display === 'none' || readmeBlock.style.display === '') {
-            readmeBlock.style.display = 'block';
-        } else {
-            readmeBlock.style.display = 'none';
-        }
-    }
-
-    // Phase 2: Manual Data Entry
-    function addStudent() {
-        const nameInput = document.getElementById('studentName');
-        const gradeInput = document.getElementById('studentGrade');
-        const errorMsg = document.getElementById('gradeError');
-
-        const name = nameInput.value.trim();
-        const grade = parseFloat(gradeInput.value);
-
-        if (!name || isNaN(grade)) {
-            alert("Please enter both a valid name and grade.");
-            return;
-        }
-        if (grade < 0 || grade > 100) {
-            errorMsg.style.display = 'block';
-            return;
-        }
-
-        errorMsg.style.display = 'none';
-        students.push({ name: name, grade: grade });
-        nameInput.value = ''; gradeInput.value = '';
-        updateUI();
-    }
-
-    // Phase 5: Smart File Parser (Handles CSV and vertical TXT)
-    function processFile() {
-        const fileInput = document.getElementById('fileInput');
-        if (!fileInput.files.length) {
-            alert("Please select a file first.");
-            return;
-        }
-
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-
-        reader.onload = function(e) {
-            const lines = e.target.result.split(/\r?\n/);
-            let success = 0;
-
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
-                if (!line || line.toLowerCase().includes('grade')) continue;
-
-                if (line.includes(',')) {
-                    // CSV Format
-                    const parts = line.split(',');
-                    if (parts.length >= 2) {
-                        const name = parts[0].trim();
-                        const grade = parseFloat(parts[1].trim());
-                        if (!isNaN(grade) && grade >= 0 && grade <= 100) {
-                            students.push({ name: name, grade: grade });
-                            success++;
-                        }
-                    }
-                } else {
-                    // Vertical TXT Format
-                    const name = line;
-                    let nextLine = lines[++i];
-                    while (nextLine !== undefined && nextLine.trim() === '') {
-                        nextLine = lines[++i];
-                    }
-                    if (nextLine !== undefined) {
-                        const grade = parseFloat(nextLine.trim());
-                        if (!isNaN(grade) && grade >= 0 && grade <= 100) {
-                            students.push({ name: name, grade: grade });
-                            success++;
-                        }
-                    }
-                }
-            }
-
-            alert(`✅ File loaded! ${success} students added.`);
-            updateUI();
-            fileInput.value = '';
-        };
-        reader.readAsText(file);
-    }
-
-    // Phase 3 & 4: Calculations & Display
-    function updateUI() {
-        const tbody = document.getElementById('rosterBody');
-        tbody.innerHTML = '';
-
-        if (students.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #888;">No students in the system.</td></tr>';
-            document.getElementById('statTotal').innerText = '0';
-            document.getElementById('statAvg').innerText = '0.00';
-            document.getElementById('statHigh').innerText = '0.00';
-            document.getElementById('statLow').innerText = '0.00';
-            return;
-        }
-
-        let sum = 0, highest = -1, lowest = 101;
-
-        students.forEach(student => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${student.name}</td><td>${student.grade.toFixed(2)}</td>`;
-            tbody.appendChild(tr);
-
-            sum += student.grade;
-            if (student.grade > highest) highest = student.grade;
-            if (student.grade < lowest) lowest = student.grade;
-        });
-
-        document.getElementById('statTotal').innerText = students.length;
-        document.getElementById('statAvg').innerText = (sum / students.length).toFixed(2);
-        document.getElementById('statHigh').innerText = highest.toFixed(2);
-        document.getElementById('statLow').innerText = lowest.toFixed(2);
-    }
-
-    // Phase 6: Dynamic CSV Export
-    function exportToCSV() {
-        if (students.length === 0) { alert("No data to export!"); return; }
-
-        const d = new Date();
-        const timestamp = d.getFullYear().toString() + 
-                         String(d.getMonth() + 1).padStart(2, '0') + 
-                         String(d.getDate()).padStart(2, '0') + "_" + 
-                         String(d.getHours()).padStart(2, '0') + 
-                         String(d.getMinutes()).padStart(2, '0') + 
-                         String(d.getSeconds()).padStart(2, '0');
-
-        let csvContent = "Student Name,Grade\n";
-        students.forEach(s => csvContent += `${s.name},${s.grade.toFixed(2)}\n`);
-
-        csvContent += "\nSTATISTICS,\n";
-        csvContent += `Total Students,${document.getElementById('statTotal').innerText}\n`;
-        csvContent += `Average Grade,${document.getElementById('statAvg').innerText}\n`;
-        csvContent += `Highest Grade,${document.getElementById('statHigh').innerText}\n`;
-        csvContent += `Lowest Grade,${document.getElementById('statLow').innerText}\n`;
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `Class_Report_${timestamp}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-</script>
-
-</body>
-</html>
+            border-radius:
